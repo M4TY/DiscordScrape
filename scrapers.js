@@ -8,7 +8,7 @@ const cron = require("node-cron");
 
 //Discord + Cron
 
-client.login("OTM2NTM3NTg5MzQ1ODIwNzE0.YfOomQ.kYdZFZDNJZlnDnI7RjqKIXnmHf4");
+client.login("");
 
 //Scrape data 'n save
 async function scrapeProduct(url) {
