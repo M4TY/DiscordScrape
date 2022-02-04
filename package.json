@@ -12,6 +12,6 @@
   "dependencies": {
     "discord.js": "^13.6.0",
     "node-cron": "^3.0.0",
-    "puppeteer": "^13.1.2"
+    "puppeteer": "^13.1.3"
   }
 }

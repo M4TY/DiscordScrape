@@ -1,20 +1,32 @@
 //Scraping
 const puppeteer = require("puppeteer");
+//File Writer
 const fs = require("fs/promises");
-//Discord BOT + Cron
-const { Client, Intents } = require("discord.js");
-const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
+const { readFile, fsyncSync } = require("fs");
+// Scrape data 'n save
 const cron = require("node-cron");
+//Discord
+const Discord = require("discord.js");
+const client = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES"] });
+const { MessageEmbed } = require("discord.js");
+const { channel } = require("diagnostics_channel");
 
-//Discord + Cron
-
-client.login("");
-
-//Scrape data 'n save
-async function scrapeProduct(url) {
-  const browser = await puppeteer.launch();
+async function scrapeProduct() {
+  //Open new browser
+  const browser = await puppeteer.launch({
+    handless: false,
+  });
+  //New Page
   const page = await browser.newPage();
-  await page.goto(url);
+  // Navigation timeout
+  await page.setDefaultNavigationTimeout(0);
+
+  //Goto {{ this }} page
+  await page.goto("https://ssps.cz", {
+    waitUntil: "load",
+    // Remove the timeout
+    timeout: 0,
+  });
 
   const names = await page.evaluate(() => {
     return Array.from(document.querySelectorAll("ul:nth-child(4) li")).map(
@@ -22,34 +34,40 @@ async function scrapeProduct(url) {
     );
   });
 
-  fs.truncate("names.txt");
-  names.forEach((element) => {
-    if (element.includes("-2.A")) {
-      console.log(element);
-      fs.appendFile("names.txt", element + "\r\n");
-    } else {
+  let filename = "names.txt";
+
+  readFile(filename, (error, fileBuffer) => {
+    if (error) {
+      console.error(error.message);
+      process.exit(1);
     }
+
+    const fileContent = fileBuffer.toString();
+
+    names.forEach((element) => {
+      if (element.includes("2.A") && !fileContent.includes(element)) {
+        fs.truncate(filename);
+        console.log(element);
+        fs.appendFile(filename, element + "\r\n");
+        client.once("message", () => {
+          const channel101 = client.channels.cache.find(
+            (channel) => channel.id === "939059791538569277"
+          );
+          channel101.send(element);
+        });
+      }
+    });
   });
+
   await browser.close();
 }
-scrapeProduct("https://ssps.cz");
 
-client.on("ready", () => {
-  console.log("Running!");
-  client.user.setActivity("On!");
+cron.schedule("*/10 * * * * *", () => {
+  scrapeProduct();
 });
 
-client.on("message", () => {
-  const channel = client.channels.cache.get("742114835688325150");
-  channel.send("xd");
-  cron.schedule("* * * * * *", () => {
-    /*if (message.content === names) {
-          scrapeProduct("https://ssps.cz");
-          console.log("Scraping product again");
-        } else {
-          client.channels.cache.get(`742114835688325150`).send(names);
-          scrapeProduct("https://ssps.cz");
-          console.log("Send scrapeProduct");
-        }*/
-  });
+client.once("ready", () => {
+  console.log("Client running on.");
 });
+
+client.login("OTM2NTM3NTg5MzQ1ODIwNzE0.YfOomQ.kI6ZyperyQtTXk2CaDENIUVeFIc");
